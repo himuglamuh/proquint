@@ -1,0 +1,20 @@
+{
+  "name": "proquint-cli",
+  "version": "1.0.0",
+  "description": "Hash → proquint (pronounceable) encoder",
+  "license": "MIT",
+  "type": "commonjs",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/cli.js",
+    "dev": "ts-node src/cli.ts --help"
+  },
+  "dependencies": {
+    "commander": "^11.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.0"
+  }
+}
