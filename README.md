@@ -1,7 +1,7 @@
 # Proquint Tool
 
 Encode and decode [proquints](https://arxiv.org/html/0901.4016) from strings or cryptographic hashes.  
-Supports `md5 | sha1 | sha256 | blake2s256 | none` (raw), with control over syllable count, hyphenation, and padding.  
+Supports `md5 | sha1 | sha256 | blake2s256 | none (raw)`, with control over syllable count, hyphenation, and padding.  
 
 Built for when you want memorable, pronounceable identifiers from otherwise opaque bytes.
 
