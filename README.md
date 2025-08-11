@@ -20,7 +20,7 @@ Built for when you want memorable, pronounceable identifiers from otherwise opaq
 ## 📦 Install
 
 ```bash
-git clone https://github.com/thomasrayner/proquint.git
+git clone https://github.com/himuglamuh/proquint.git
 cd proquint
 npm install
 npm run build
