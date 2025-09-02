@@ -3,8 +3,8 @@
 
 # Proquint Tool
 
-RFC-compliant encoder/decoder for [proquints](https://arxiv.org/html/0901.4016) - pronounceable, spellable identifiers following [`//TODO: add link to RFC`].  
-Supports `md5 | sha1 | sha256 | blake2s256 | none (raw)` with pipeline input, byte arrays, and hyphenation.
+Encode and decode [proquints](https://arxiv.org/html/0901.4016) from strings or cryptographic hashes.  
+Supports `md5 | sha1 | sha256 | blake2s256 | none (raw)`, with control over syllable count, hyphenation, and padding.  
 
 Built for memorable, human-friendly identifiers from binary data.
 
