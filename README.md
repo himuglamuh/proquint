@@ -1,5 +1,5 @@
 > [!WARNING]
-> This project is a work in progress. The API and features may change before the 1.0 release. Use at your own risk.
+> This project is a work in progress. The API and features may change. Use at your own risk.
 
 # Proquint Tool
 
