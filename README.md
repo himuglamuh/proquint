@@ -12,7 +12,7 @@ Built for memorable, human-friendly identifiers from binary data.
 
 ## ✨ Features
 
-- **RFC Compliant**: Implements draft-rayner-proquint-07 specification exactly
+- **RFC Compliant**: Implements [`//TODO: add link to RFC`] specification exactly
 - **Multiple Input Types**: Strings, byte arrays, or pipeline input
 - **Hash → Proquint**: Generate identifiers from cryptographic hashes
 - **Raw → Proquint**: Encode raw bytes directly with `--algo none`
@@ -39,11 +39,11 @@ npm run build
 ### Encode (String → Proquint)
 
 ```bash
-# Hash-based encoding (default md5)
+# Raw string encoding
 node dist/cli.js encode "Hello World"
 
-# Raw bytes encoding
-node dist/cli.js encode "test" --algo none --hyphen
+# Hash-based encoding
+node dist/cli.js encode "test" --algo md5 --hyphen
 
 # With different hash algorithms
 node dist/cli.js encode "data" --algo sha256
