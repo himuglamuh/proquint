@@ -1,4 +1,4 @@
-import { toProquint, fromProquint, addHyphens } from './proquint';
+import { toProquint, fromProquint, addHyphens } from '../src/proquint';
 
 describe('proquint', () => {
   describe('toProquint', () => {
