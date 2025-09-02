@@ -46,6 +46,23 @@ export function toProquint(bytes: Buffer): string {
   return out;
 }
 
+export function addHyphens(proquint: string): string {
+  const hasTrailingHyphen = proquint.endsWith('-');
+  const base = hasTrailingHyphen ? proquint.slice(0, -1) : proquint;
+  
+  const syllables: string[] = [];
+  for (let i = 0; i < base.length; i += 5) {
+    syllables.push(base.slice(i, i + 5));
+  }
+  
+  let result = syllables.join('-');
+  if (hasTrailingHyphen) {
+    result += '-';
+  }
+  
+  return result;
+}
+
 export function fromProquint(pq: string): Buffer {
   pq = pq.toLowerCase();
 

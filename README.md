@@ -1,19 +1,25 @@
+> [!WARNING]
+> This project is a work in progress. The API and features may change before the 1.0 release. Use at your own risk.
+
 # Proquint Tool
 
-Encode and decode [proquints](https://arxiv.org/html/0901.4016) from strings or cryptographic hashes.  
-Supports `md5 | sha1 | sha256 | blake2s256 | none (raw)`, with control over syllable count, hyphenation, and padding.  
+RFC-compliant encoder/decoder for [proquints](https://arxiv.org/html/0901.4016) - pronounceable, spellable identifiers following [`//TODO: add link to RFC`].  
+Supports `md5 | sha1 | sha256 | blake2s256 | none (raw)` with pipeline input, byte arrays, and hyphenation.
 
-Built for when you want memorable, pronounceable identifiers from otherwise opaque bytes.
+Built for memorable, human-friendly identifiers from binary data.
 
 ---
 
 ## ✨ Features
 
-- **Hash → Proquint**: Generate pronounceable, semi-random identifiers from cryptographic hashes.
-- **Raw → Proquint**: Use `--algo none` to encode raw strings directly.
-- **Decode**: Turn proquints back into their byte representation (and UTF-8 preview if raw).
-- **Readable IDs**: Control syllables and hyphenation for human-friendly output.
-- **Round-trip Safe**: Zero-pad odd byte counts in raw mode by default for full decode support.
+- **RFC Compliant**: Implements draft-rayner-proquint-07 specification exactly
+- **Multiple Input Types**: Strings, byte arrays, or pipeline input
+- **Hash → Proquint**: Generate identifiers from cryptographic hashes
+- **Raw → Proquint**: Encode raw bytes directly with `--algo none`
+- **Pipeline Support**: Read from stdin for integration with shell pipelines
+- **Hyphenation**: Optional hyphens between syllables for readability
+- **Padding**: Automatic RFC-compliant padding for odd-length inputs
+- **Round-trip Safe**: Perfect encode/decode fidelity
 
 ---
 
@@ -24,54 +30,61 @@ git clone https://github.com/himuglamuh/proquint.git
 cd proquint
 npm install
 npm run build
-````
+```
 
 ---
 
 ## 🚀 Usage
 
-### Encode (Hash → Proquint)
+### Encode (String → Proquint)
 
 ```bash
-node dist/cli.js encode "F3r41OutL4w" -a md5 -s 2
+# Hash-based encoding (default md5)
+node dist/cli.js encode "Hello World"
+
+# Raw bytes encoding
+node dist/cli.js encode "test" --algo none --hyphen
+
+# With different hash algorithms
+node dist/cli.js encode "data" --algo sha256
 ```
 
-**Output:**
-
+**Example Output:**
 ```json
 {
-  "seed": "F3r41OutL4w",
-  "algo": "md5",
-  "bytesHex": "bb2b9f316709768d7c138b83800beb16",
-  "syllables": 2,
-  "proquint": "rosornusud",
-  "note": "Decoding proquint returns hash bytes, not the original seed."
+  "input": "test",
+  "algo": "none",
+  "bytesHex": "74657374",
+  "proquint": "lidoj-latuh"
 }
 ```
 
----
-
-### Encode Raw (No Hash)
+### Pipeline Input
 
 ```bash
-node dist/cli.js encode "F3r41OutL4w" -a none -s 2 --hyphen
+# Encode from stdin
+echo -n "some text" | node dist/cli.js encode -a none --hyphen
+
+# Decode from stdin  
+echo -n "himuglamuh" | node dist/cli.js decode
+```
+
+### Byte Array Input
+
+```bash
+# JSON byte array input
+node dist/cli.js encode '[70, 51, 114, 52]' --algo none --hyphen
 ```
 
 **Output:**
-
 ```json
 {
-  "seed": "F3r41OutL4w",
-  "algo": "none",
-  "bytesHex": "46337234314f75744c3477",
-  "syllables": 2,
+  "input": "[70, 51, 114, 52]",
+  "algo": "none", 
+  "bytesHex": "46337234",
   "proquint": "himug-lamuh"
 }
 ```
-
-Use `--no-pad` to skip zero-padding on odd byte counts.
-
----
 
 ### Decode (Proquint → Bytes)
 
@@ -80,51 +93,88 @@ node dist/cli.js decode "himug-lamuh"
 ```
 
 **Output:**
-
 ```json
 {
   "proquint": "himug-lamuh",
   "bytesHex": "46337234",
-  "utf8Preview": "F3r4"
-}
-```
-
-> ℹ️ If you encoded with a hash algorithm, decoding returns hash bytes, not the original seed.
-
-```bash
-node dist/cli.js decode "rosornusud"
-```
-
-**Output:**
-
-```json
-{
-  "proquint": "rosornusud",
-  "bytesHex": "bb2b9f31",
-  "utf8Preview": "�+�1"
+  "utf8Preview": "F3r4",
+  "byteArray": [70, 51, 114, 52]
 }
 ```
 
 ---
 
+## 🧪 Testing
+
+Run the comprehensive unit tests:
+
+```bash
+npm test
+```
+
+Run tests in watch mode:
+
+```bash
+npm run test:watch
+```
+
+The test suite includes:
+- All RFC test vectors
+- Round-trip encoding/decoding
+- Error handling validation
+- Edge cases and boundary conditions
+- Hyphenation functionality
+
+---
+
+## 🔧 CLI Options
+
+### `encode` command
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `[input]` | Input string, byte array, or omit for stdin | Required |
+| `-a, --algo <algo>` | Hash algorithm: `none`, `md5`, `sha1`, `sha256`, `blake2s256` | `md5` |
+| `--hyphen` | Add hyphens between syllables | `false` |
+
+### `decode` command
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `[proquint]` | Proquint string or omit for stdin | Required |
+
+---
+
 ## 🧠 How It Works
 
-A **proquint** encodes 16-bit chunks into five-letter syllables:
-`consonant-vowel-consonant-vowel-consonant` using fixed tables of 16 consonants and 4 vowels.
+A **proquint** encodes binary data as alternating consonant-vowel letters in five-letter syllables following the CVCVC pattern.
 
-For example:
+**RFC Specification Features:**
+- Fixed consonant table: `bdfghjklmnprstvz` (16 consonants)
+- Fixed vowel table: `aiou` (4 vowels)  
+- 16-bit words encoded as five letters: `C1V1C2V2C3`
+- Automatic padding with trailing hyphen for odd-length inputs
+- Case-insensitive decoding
+- Interior hyphens ignored, trailing hyphen signals padding
 
-* `0xC0DE` → `"lugov"`
-* `0xBEEF` → `"rinuv"`
+**Example:**
+- `0x1234` → `"damuh"`
+- `0xF00D` → `"zabat"`  
+- `[0x01, 0x02, 0x03]` → `"bahafbasab-"` (padded)
 
-This tool:
+---
 
-1. **Gets bytes** from either a hash (`md5`, `sha1`, `sha256`, `blake2s256`) or raw string.
-2. **Pads** bytes if necessary to keep 16-bit boundaries (optional).
-3. **Encodes** each 16-bit chunk into a syllable.
-4. **Joins** syllables with or without hyphens.
+## 📋 RFC Compliance
 
-Decoding reverses this mapping.
+This implementation strictly follows **draft-rayner-proquint-07**:
+
+✅ Exact consonant/vowel tables  
+✅ Proper bit layout (15-12, 11-10, 9-6, 5-4, 3-0)  
+✅ Network byte order processing  
+✅ Padding with trailing hyphen signaling  
+✅ Case-insensitive decoding  
+✅ All error conditions handled  
+✅ Complete test vector validation  
 
 ---
 
