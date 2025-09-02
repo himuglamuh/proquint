@@ -1,56 +1,130 @@
-// Standard proquint tables: 16 consonants, 4 vowels
 const CONSONANTS = "bdfghjklmnprstvz";
 const VOWELS = "aiou";
 
-function syllableFrom16(n: number): string {
-  const c1 = CONSONANTS[(n >>> 12) & 0x0f];
-  const v1 = VOWELS[(n >>> 10) & 0x03];
-  const c2 = CONSONANTS[(n >>>  6) & 0x0f];
-  const v2 = VOWELS[(n >>>  4) & 0x03];
-  const c3 = CONSONANTS[n & 0x0f];
-  return `${c1}${v1}${c2}${v2}${c3}`;
+function indexOf(ch: string, table: string): number {
+  const pos = table.indexOf(ch);
+  if (pos < 0) {
+    throw new Error("invalid character");
+  }
+  return pos;
 }
 
-/** Encode bytes → proquint. If bytes length is odd and pad=true, pads with 0x00. */
-export function toProquint(bytes: Buffer, opts?: { syllables?: number; hyphen?: boolean; pad?: boolean }): string {
-  const hyphen = !!opts?.hyphen;
-  const pad = opts?.pad !== false; // default true
-  let buf = bytes;
-  if (buf.length % 2 === 1 && pad) buf = Buffer.concat([buf, Buffer.from([0])]);
-
-  const maxSyll = Math.floor(buf.length / 2);
-  const count = opts?.syllables ? Math.min(opts.syllables, maxSyll) : maxSyll;
-
-  const parts: string[] = [];
-  for (let i = 0; i < count; i++) {
-    const hi = buf[i * 2]!;
-    const lo = buf[i * 2 + 1]!;
-    parts.push(syllableFrom16((hi << 8) | lo));
+export function toProquint(bytes: Buffer): string {
+  if (bytes.length === 0) {
+    throw new Error("empty input not allowed");
   }
-  return hyphen ? parts.join("-") : parts.join("");
-}
 
-/** Decode proquint (hyphenated or not) → bytes. Throws on invalid characters/length. */
-export function fromProquint(pq: string): Buffer {
-  const clean = pq.includes("-")
-    ? pq.split("-").join("")
-    : pq;
-  if (clean.length % 5 !== 0) {
-    throw new Error("Invalid proquint length: must be multiple of 5 characters (per syllable).");
-  }
-  const bytes: number[] = [];
-  for (let i = 0; i < clean.length; i += 5) {
-    const q = clean.slice(i, i + 5);
-    const c1 = CONSONANTS.indexOf(q[0]!);
-    const v1 = VOWELS.indexOf(q[1]!);
-    const c2 = CONSONANTS.indexOf(q[2]!);
-    const v2 = VOWELS.indexOf(q[3]!);
-    const c3 = CONSONANTS.indexOf(q[4]!);
-    if (c1 < 0 || v1 < 0 || c2 < 0 || v2 < 0 || c3 < 0) {
-      throw new Error(`Invalid proquint syllable: "${q}"`);
+  let out = "";
+  let i = 0;
+  let pad = false;
+
+  while (i < bytes.length) {
+    const hi = bytes[i];
+    i += 1;
+    let lo: number;
+    if (i < bytes.length) {
+      lo = bytes[i];
+      i += 1;
+    } else {
+      lo = 0x00;
+      pad = true;
     }
-    const val = (c1 << 12) | (v1 << 10) | (c2 << 6) | (v2 << 4) | c3;
-    bytes.push((val >> 8) & 0xff, val & 0xff);
+
+    const w = (hi << 8) | lo;
+    const c1 = CONSONANTS[(w >> 12) & 0xF];
+    const v1 = VOWELS[(w >> 10) & 0x3];
+    const c2 = CONSONANTS[(w >> 6) & 0xF];
+    const v2 = VOWELS[(w >> 4) & 0x3];
+    const c3 = CONSONANTS[w & 0xF];
+    out += c1 + v1 + c2 + v2 + c3;
   }
-  return Buffer.from(bytes);
+
+  if (pad && out.length > 0) {
+    out += '-';
+  }
+
+  return out;
+}
+
+export function addHyphens(proquint: string): string {
+  const hasTrailingHyphen = proquint.endsWith('-');
+  const base = hasTrailingHyphen ? proquint.slice(0, -1) : proquint;
+  
+  const syllables: string[] = [];
+  for (let i = 0; i < base.length; i += 5) {
+    syllables.push(base.slice(i, i + 5));
+  }
+  
+  let result = syllables.join('-');
+  if (hasTrailingHyphen) {
+    result += '-';
+  }
+  
+  return result;
+}
+
+export function fromProquint(pq: string): Buffer {
+  pq = pq.toLowerCase();
+
+  let pad = false;
+  if (pq.length > 0 && pq[pq.length - 1] === '-') {
+    pad = true;
+    if (pq.length >= 2 && pq[pq.length - 2] === '-') {
+      throw new Error("multiple trailing hyphens");
+    }
+    pq = pq.slice(0, -1);
+  }
+
+  if (pq.length > 0 && pq[0] === '-') {
+    throw new Error("leading hyphen not allowed");
+  }
+  if (pq.includes("--")) {
+    throw new Error("consecutive interior hyphens not allowed");
+  }
+
+  if (pq === "") {
+    throw new Error("empty input not allowed");
+  }
+
+  let parts: string[] = [];
+  if (pq.includes("-")) {
+    parts = pq.split("-");
+    if (parts.some(p => p === "")) {
+      throw new Error("invalid empty syllable");
+    }
+  } else {
+    if ((pq.length % 5) !== 0) {
+      throw new Error("run-on form length must be a multiple of 5");
+    }
+    for (let i = 0; i < pq.length; i += 5) {
+      parts.push(pq.slice(i, i + 5));
+    }
+  }
+
+  const out = new Array<number>(2 * parts.length);
+  let k = 0;
+  for (const part of parts) {
+    if (part.length !== 5) {
+      throw new Error("syllable length must be 5");
+    }
+
+    const c1 = indexOf(part[0], CONSONANTS);
+    const v1 = indexOf(part[1], VOWELS);
+    const c2 = indexOf(part[2], CONSONANTS);
+    const v2 = indexOf(part[3], VOWELS);
+    const c3 = indexOf(part[4], CONSONANTS);
+    const w = (c1 << 12) | (v1 << 10) | (c2 << 6) | (v2 << 4) | c3;
+    out[k] = (w >> 8) & 0xFF;
+    out[k + 1] = w & 0xFF;
+    k += 2;
+  }
+
+  if (pad) {
+    if (k === 0 || out[k - 1] !== 0x00) {
+      throw new Error("trailing hyphen requires final 0x00 padding byte");
+    }
+    k -= 1;
+  }
+
+  return Buffer.from(out.slice(0, k));
 }
